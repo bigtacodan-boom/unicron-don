@@ -1,0 +1,40 @@
+{
+  "capabilityId": "repository-discovery",
+  "providerId": "github",
+  "connectorVersion": "0.1.0",
+  "operations": [
+    "repository.get",
+    "repository.tree",
+    "repository.contents"
+  ],
+  "permissions": [
+    "read-only-access",
+    "network-access"
+  ],
+  "contractTest": "test/github-conformance.test.ts",
+  "evidence": {
+    "sourceUrl": "https://docs.github.com/en/rest",
+    "retrievedAt": "2026-11-16T00:00:00.000Z",
+    "revision": "2022-11-28",
+    "sourceVerified": false,
+    "note": "Response shapes follow the GitHub REST documentation for API version 2022-11-28 and are reproduced as synthetic fixtures. Not yet confirmed against a live authenticated call: the smoke run on 2026-11-16 was refused by the public rate limit before any response shape could be compared. See liveSmoke.",
+    "liveSmoke": {
+      "ranAt": "2026-11-16T12:21:18.153Z",
+      "target": "bigtacodan-boom/unicron-don",
+      "authenticated": false,
+      "result": "failed",
+      "operations": [],
+      "drift": [],
+      "note": "repository.get failed with rate_limited"
+    }
+  },
+  "scan": {
+    "verdict": "pass",
+    "ruleSetVersion": "authored-code/1",
+    "trustTier": "tier-0-authored",
+    "evidenceRefs": [
+      "src/adapters/github.ts",
+      "test/github-conformance.test.ts"
+    ]
+  }
+}

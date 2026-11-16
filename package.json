@@ -1,0 +1,21 @@
+{
+  "name": "to-kill-a-jarvis",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Phase 1 capability spine: universal connector contract, GitHub adapter, capability registry, conformance suite.",
+  "engines": {
+    "node": ">=20.6"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test test/*.test.ts",
+    "smoke:live": "node --import tsx scripts/live-smoke.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
