@@ -42,6 +42,28 @@ export type ConformanceHarness = {
 
 export type ConformanceCheck = { name: string; run: () => Promise<void> };
 
+/** One check's outcome, recorded so a proof is inspectable rather than a boolean. */
+export type ConformanceCheckResult = {
+  name: string;
+  passed: boolean;
+  detail?: string;
+};
+
+/**
+ * Evidence that a connector's contract was actually exercised (§14 Phase 1).
+ * Admission requires one of these, so "the tests pass" is an artifact with a
+ * timestamp and a version rather than a claim.
+ */
+export type ConformanceProof = {
+  capabilityId: string;
+  providerId: string;
+  connectorVersion: string;
+  contractVersion: string;
+  ranAt: string;
+  checks: readonly ConformanceCheckResult[];
+  passed: boolean;
+};
+
 function failuresInContract(connector: Connector): string[] {
   const problems: string[] = [];
   const d = connector.descriptor;
@@ -71,6 +93,43 @@ function failuresInContract(connector: Connector): string[] {
   if (!d.version.connector || !d.version.contract) problems.push('version information is incomplete');
 
   return problems;
+}
+
+/**
+ * Runs every check and returns their outcomes. Unlike the checks themselves it
+ * does not throw on failure: a failed run is a proof that says so, which is
+ * what the registry needs in order to refuse admission with a reason.
+ */
+export async function runConformance(
+  harness: ConformanceHarness,
+  now: () => Date = () => new Date(),
+): Promise<ConformanceProof> {
+  const results: ConformanceCheckResult[] = [];
+
+  for (const check of buildConformanceChecks(harness)) {
+    try {
+      await check.run();
+      results.push({ name: check.name, passed: true });
+    } catch (error) {
+      results.push({
+        name: check.name,
+        passed: false,
+        // First line only: proofs are stored, and assertion messages can be long.
+        detail: error instanceof Error ? error.message.split('\n')[0] : String(error),
+      });
+    }
+  }
+
+  const descriptor = harness.connector.descriptor;
+  return {
+    capabilityId: descriptor.capability.id,
+    providerId: descriptor.provider.id,
+    connectorVersion: descriptor.version.connector,
+    contractVersion: descriptor.version.contract,
+    ranAt: now().toISOString(),
+    checks: results,
+    passed: results.every((result) => result.passed),
+  };
 }
 
 export function buildConformanceChecks(harness: ConformanceHarness): ConformanceCheck[] {

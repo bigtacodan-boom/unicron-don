@@ -36,5 +36,47 @@
       "src/adapters/github.ts",
       "test/github-conformance.test.ts"
     ]
+  },
+  "conformance": {
+    "capabilityId": "repository-discovery",
+    "providerId": "github",
+    "connectorVersion": "0.1.0",
+    "contractVersion": "1.0.0",
+    "ranAt": "2026-11-16T13:24:16.519Z",
+    "checks": [
+      {
+        "name": "descriptor declares every field of the connector contract (§5.2)",
+        "passed": true
+      },
+      {
+        "name": "operations are unique, complete, and require only declared permissions",
+        "passed": true
+      },
+      {
+        "name": "healthCheck reports a well-formed status",
+        "passed": true
+      },
+      {
+        "name": "operation repository.get succeeds with contract-conforming output",
+        "passed": true
+      },
+      {
+        "name": "operation repository.tree succeeds with contract-conforming output",
+        "passed": true
+      },
+      {
+        "name": "operation repository.contents succeeds with contract-conforming output",
+        "passed": true
+      },
+      {
+        "name": "invalid input is rejected with a declared code before the provider is called",
+        "passed": true
+      },
+      {
+        "name": "operations are blocked when their permissions are not granted (§10.7)",
+        "passed": true
+      }
+    ],
+    "passed": true
   }
 }

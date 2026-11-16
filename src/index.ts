@@ -41,7 +41,10 @@ export {
 
 export {
   buildConformanceChecks,
+  runConformance,
   type ConformanceCase,
   type ConformanceCheck,
+  type ConformanceCheckResult,
   type ConformanceHarness,
+  type ConformanceProof,
 } from './conformance.js';

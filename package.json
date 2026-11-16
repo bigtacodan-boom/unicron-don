@@ -11,7 +11,8 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test test/*.test.ts",
-    "smoke:live": "node --import tsx scripts/live-smoke.ts"
+    "smoke:live": "node --import tsx scripts/live-smoke.ts",
+    "record:conformance": "node --import tsx scripts/record-conformance.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

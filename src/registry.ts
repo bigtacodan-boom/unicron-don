@@ -12,6 +12,7 @@
  * tested.
  */
 import type { Connector, Permission, TrustTier } from './contract.js';
+import type { ConformanceProof } from './conformance.js';
 
 /**
  * Outcome of a live smoke run against the real provider (scripts/live-smoke.ts).
@@ -63,6 +64,12 @@ export type RegistrationEntry = {
   permissions?: readonly Permission[];
   /** Path to the contract/conformance test that proves this adapter (§3.2). */
   contractTest: string;
+  /**
+   * Result of actually running that suite (src/conformance.ts). Required: a
+   * path is a pointer, this is evidence, and admission does not run a
+   * connector on trust.
+   */
+  conformance: ConformanceProof;
   evidence: Evidence;
   scan: ScanVerdict;
 };
@@ -74,6 +81,7 @@ export type CapabilityRecord = {
   operations: readonly string[];
   permissions: readonly Permission[];
   contractTest: string;
+  conformance: ConformanceProof;
   evidence: Evidence;
   scan: ScanVerdict;
   registeredAt: string;
@@ -169,6 +177,48 @@ export class CapabilityRegistry {
       }
     }
 
+    const proof = entry.conformance;
+    if (!proof) {
+      issues.push(
+        'conformance proof is required: run the suite (src/conformance.ts) and pass its result, a test path alone proves nothing',
+      );
+    } else {
+      if (proof.capabilityId !== descriptor.capability.id) {
+        issues.push(
+          `conformance proof was produced for capability "${proof.capabilityId}", not "${descriptor.capability.id}"`,
+        );
+      }
+      if (proof.providerId !== descriptor.provider.id) {
+        issues.push(
+          `conformance proof was produced for provider "${proof.providerId}", not "${descriptor.provider.id}"`,
+        );
+      }
+      if (proof.connectorVersion !== descriptor.version.connector) {
+        issues.push(
+          `conformance proof is stale: produced for connector version "${proof.connectorVersion}", connector is "${descriptor.version.connector}"`,
+        );
+      }
+      if (proof.contractVersion !== descriptor.version.contract) {
+        issues.push(
+          `conformance proof targets contract version "${proof.contractVersion}", connector implements "${descriptor.version.contract}"`,
+        );
+      }
+      if (!proof.ranAt || Number.isNaN(Date.parse(proof.ranAt))) {
+        issues.push('conformance proof.ranAt must be an ISO timestamp');
+      }
+      if (!proof.checks || proof.checks.length === 0) {
+        issues.push('conformance proof records no checks');
+      } else {
+        const failed = proof.checks.filter((check) => !check.passed).map((check) => check.name);
+        if (failed.length > 0) {
+          issues.push(`conformance proof has failing checks: ${failed.join(', ')}`);
+        }
+        if (!proof.passed) {
+          issues.push('conformance proof did not pass');
+        }
+      }
+    }
+
     if (descriptor.operations.length === 0) {
       issues.push('connector declares no operations');
     }
@@ -204,6 +254,10 @@ export class CapabilityRegistry {
       operations: descriptor.operations.map((operation) => operation.name),
       permissions: [...descriptor.permissions],
       contractTest: entry.contractTest,
+      conformance: {
+        ...entry.conformance,
+        checks: entry.conformance.checks.map((check) => ({ ...check })),
+      },
       evidence: { ...evidence },
       scan: { ...scan, evidenceRefs: [...scan.evidenceRefs] },
       registeredAt: now().toISOString(),
