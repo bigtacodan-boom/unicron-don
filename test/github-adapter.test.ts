@@ -76,9 +76,15 @@ test('retries a 5xx and then succeeds, recording both attempts', async () => {
 });
 
 test('reports timeout distinctly from failure', async () => {
+  // The keep-alive timer is deliberately ref'd. AbortSignal.timeout() uses an
+  // unref'd timer, so a fake fetch with no real socket lets the event loop
+  // drain before the deadline fires; the runner then reports the test as
+  // cancelled by parent (observed on Node 22 CI, invisible on Node 26).
   const hanging = ((_input: Request | string | URL, init?: RequestInit) =>
     new Promise<Response>((_resolve, reject) => {
+      const keepAlive = setTimeout(() => {}, 5_000);
       init?.signal?.addEventListener('abort', () => {
+        clearTimeout(keepAlive);
         reject(Object.assign(new Error('aborted'), { name: 'TimeoutError' }));
       });
     })) as typeof fetch;
