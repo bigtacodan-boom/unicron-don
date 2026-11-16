@@ -116,7 +116,7 @@ function record(result: LiveSmokeResult): void {
 }
 
 async function main(): Promise<number> {
-  const target = process.env.SMOKE_REPO ?? 'bigtacodan-boom/unicron-don';
+  const target = process.env.SMOKE_REPO || 'bigtacodan-boom/unicron-don';
   const [owner, repo] = target.split('/');
   if (!owner || !repo) {
     console.error(`SMOKE_REPO must look like owner/name, received "${target}"`);
@@ -153,7 +153,7 @@ async function main(): Promise<number> {
   console.log(`repository.get: succeeded (HTTP ${meta.telemetry.httpStatus ?? '?'})`);
 
   const metadata = meta.output as { defaultBranch: string; sizeKb: number };
-  const ref = process.env.SMOKE_REF ?? metadata.defaultBranch;
+  const ref = process.env.SMOKE_REF || metadata.defaultBranch;
 
   const tree = await live.invoke('repository.tree', { owner, repo, ref }, { trustTier });
   if (tree.status !== 'succeeded') {

@@ -1,0 +1,69 @@
+name: Live smoke (manual)
+
+# Deliberately not triggered by push or pull request: this run spends real
+# provider quota and can only say something about the fixtures when it is
+# authenticated. It is manual, token-gated, and records its outcome as an
+# artifact rather than mutating the repository (§11.5 gating, §13.4 evidence).
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: 'Repository to check as owner/name'
+        required: false
+        default: bigtacodan-boom/unicron-don
+      ref:
+        description: 'Optional branch, tag or SHA (defaults to the default branch)'
+        required: false
+        default: ''
+
+concurrency:
+  group: live-smoke
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  live-smoke:
+    name: GitHub API shape check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install from the lockfile
+        run: npm ci
+
+      - name: Verify a token is available before spending a call
+        env:
+          GITHUB_TOKEN: ${{ secrets.SMOKE_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -z "${GITHUB_TOKEN}" ]; then
+            echo "::error::No token available. Add SMOKE_GITHUB_TOKEN as a repository secret with read-only contents access."
+            exit 1
+          fi
+          echo "token present"
+
+      - name: Run the live smoke check
+        env:
+          # A dedicated read-only token takes precedence over the workflow token.
+          GITHUB_TOKEN: ${{ secrets.SMOKE_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          SMOKE_REPO: ${{ inputs.repo }}
+          SMOKE_REF: ${{ inputs.ref }}
+        run: npm run smoke:live
+
+      - name: Upload the evidence the run produced
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: registry-evidence
+          path: registry/entries/github-repository.json
+          if-no-files-found: error
